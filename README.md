@@ -2,11 +2,11 @@
 
 Epistemic uncertainty quantification for DDPM score networks via Laplace approximation, implemented on synthetic time-series.
 
-Implements and compares three BayesDiff variants:
+Implements and compares three UQ variants:
 
-- **LLLA** — Last-Layer Laplace Approximation with diagonal Hessian (fast)
-- **FLARE** — Randomized subset Laplace, diagonal Hessian over randomly selected parameters (middle ground)
-- **Full-Hessian** — Full-parameter Laplace with vmap'd Jacobians (exact, expensive)
+- **LLLA** — Last-Layer Laplace Approximation with diagonal Hessian (fast).
+- **FLARE** — Randomized subset Laplace, diagonal Hessian over randomly selected parameters (middle ground).
+- **Bayes-diff** — Existing method from Kou et al. (2024).
 
 ---
 
