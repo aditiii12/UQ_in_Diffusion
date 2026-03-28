@@ -1,6 +1,6 @@
  UQ-Diffusion
 
-Epistemic uncertainty quantification for DDPM score networks via Laplace approximation, implemented on synthetic 1-D time-series (R¹⁰).
+Epistemic uncertainty quantification for DDPM score networks via Laplace approximation, implemented on synthetic time-series.
 
 Implements and compares three BayesDiff variants:
 
