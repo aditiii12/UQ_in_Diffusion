@@ -1,17 +1,53 @@
-# from .dataset import make_laplace_dataset
-# from .wrapper import LaplaceWrapper
-# from .llla import build_llla_lastlayer_diag, llla_gamma2_diag_lastlayer
-# from .bayesdiff_llla import sample_bayesdiff_samepath_llla
+"""
+uqdiff.laplace
+--------------
+Laplace approximation for epistemic uncertainty in diffusion models.
+"""
 
-# __all__ = [
-#     "make_laplace_dataset",
-#     "LaplaceWrapper",
-#     "build_llla_lastlayer_diag",
-#     "llla_gamma2_diag_lastlayer",
-#     "sample_bayesdiff_samepath_llla",
-# ]
-from uqdiff.laplace.dataset import make_laplace_dataset, make_laplace_loader
-from uqdiff.laplace.wrapper import LaplaceWrapper
-from uqdiff.laplace.llla import build_llla_lastlayer_diag, llla_gamma2_diag_lastlayer
-from uqdiff.laplace.fit_laplace import build_and_fit_laplace
-from uqdiff.laplace.bayesdiff_llla import DiffusionShim, sample_bayesdiff_samepath
+from uqdiff.laplace.core import (
+    LaplaceWrapper,
+    DiffusionShim,
+    make_laplace_dataset,
+    make_laplace_loader,
+    build_llla,
+    build_subnet,
+    build_full,
+)
+
+from uqdiff.laplace.precision import (
+    gamma2_diag,
+    gamma2_full,
+    pack_params,
+    get_cholesky,
+)
+
+from uqdiff.laplace.bayesdiff import (
+    sample_bayesdiff,
+)
+
+from uqdiff.laplace.flare import (
+    project_llla,
+    project_full,
+    sample_flare_full,
+)
+
+__all__ = [
+    # core
+    "LaplaceWrapper",
+    "DiffusionShim",
+    "make_laplace_dataset",
+    "make_laplace_loader",
+    "build_llla",
+    "build_subnet",
+    "build_full",
+    # precision
+    "gamma2_diag",
+    "gamma2_full",
+    "pack_params",
+    "get_cholesky",
+    # samplers
+    "sample_bayesdiff",
+    "project_llla",
+    "project_full",
+    "sample_flare_full",
+]

@@ -9,3 +9,4 @@ build/
 outputs/
 assets/figures/
 checkpoints/
+checkpoints/*.pth

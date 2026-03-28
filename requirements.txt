@@ -1,8 +1,10 @@
-torch>=2.1
-numpy
-matplotlib
+torch>=2.0
+numpy>=1.24
+laplace-torch>=0.1
 tqdm
-laplace-torch
+matplotlib
+pyyaml
+scikit-learn
 cmcrameri
 
 # dev

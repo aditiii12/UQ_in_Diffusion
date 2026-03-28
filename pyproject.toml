@@ -1,20 +1,44 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "uqdiff"
 version = "0.1.0"
-description = "Uncertainty quantification tools for diffusion models"
+description = "Epistemic uncertainty quantification for diffusion models via Laplace approximation (FLARE)"
 readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Aditi Gupta" }
+]
+keywords = ["diffusion models", "uncertainty quantification", "laplace approximation", "bayesian deep learning"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
-  "torch",
-  "numpy",
-  "pyyaml",
-  "tqdm",
-  "matplotlib",
+    "torch>=2.0",
+    "numpy>=1.24",
+    "laplace-torch>=0.1",
+    "tqdm",
+    "matplotlib",
+    "pyyaml",
 ]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
+[project.optional-dependencies]
+experiments = [
+    "scikit-learn",
+    "cmcrameri",
+]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

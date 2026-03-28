@@ -1,0 +1,56 @@
+# experiments/chirp/config.yaml
+# --------------------------------
+# Chirp experiment: FM/AM/damped-sine, data_dim=80 (length=10, finer=8)
+# Uses SubnetLaplace (random 40%) since full Hessian is intractable at this scale
+
+experiment:
+  name: chirp
+  seed: 20251022
+
+data:
+  n_per_mode: 15000
+  length: 10
+  finer: 8          # data_dim = length * finer = 80
+  noise_std: 0.05
+
+model:
+  data_dim: 80
+  hidden_dim: 128
+  time_dim: 32
+  n_blocks: 0       # linear model sufficient for this dataset
+
+diffusion:
+  T: 1000
+
+training:
+  epochs: 1000
+  lr: 5.0e-4
+  batch_size: 512
+  use_min_snr: true
+  snr_gamma: 5.0
+  ema_decay: 0.999
+  clip_grad: 0.5
+  warmup_steps: 600
+  eta_min: 1.0e-6
+  save_dir: checkpoints/chirp
+  save_name: ddpm_chirp.pth
+
+laplace:
+  N_pairs: 100_000
+  batch: 10
+  snr_gamma: null
+
+subnet:
+  p_keep: 0.40      # fraction of params in subnetwork
+
+llla:
+  tau_gamma2: 1.0
+  S_cov: 64
+  n_samples: 500
+  use_cov: true
+  include_t4: true
+
+flare_subnet:
+  tau_gamma2: 1.0
+  max_batch_gamma: 256
+  n_samples: 500

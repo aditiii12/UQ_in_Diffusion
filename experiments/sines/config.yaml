@@ -1,0 +1,51 @@
+# experiments/sines/config.yaml
+# --------------------------------
+# Sines experiment: bimodal sine/-sine, data_dim=10, full Hessian Laplace
+
+experiment:
+  name: sines
+  seed: 20251022
+
+data:
+  n_samples: 5000
+  length: 10
+  std: 0.1
+
+model:
+  data_dim: 10
+  hidden_dim: 512
+  time_dim: 32
+  n_blocks: 2
+
+diffusion:
+  T: 1000
+
+training:
+  epochs: 600
+  lr: 5.0e-4
+  batch_size: 512
+  use_min_snr: true
+  snr_gamma: 5.0
+  ema_decay: 0.999
+  clip_grad: 0.5
+  warmup_steps: 600
+  eta_min: 1.0e-6
+  save_dir: checkpoints/sines
+  save_name: ddpm_sines.pth
+
+laplace:
+  N_pairs: 100_000
+  batch: 4096
+  snr_gamma: null
+
+llla:
+  tau_gamma2: 1.0
+  S_cov: 64
+  n_samples: 2000
+  use_cov: true
+  include_t4: true
+
+full_hessian:
+  tau_gamma2: 1.0
+  max_batch_gamma: 256
+  n_samples: 2000
