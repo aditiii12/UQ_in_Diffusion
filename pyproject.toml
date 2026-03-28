@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uqdiff"
+version = "0.1.0"
+description = "Uncertainty quantification tools for diffusion models"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "torch",
+  "numpy",
+  "pyyaml",
+  "tqdm",
+  "matplotlib",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
