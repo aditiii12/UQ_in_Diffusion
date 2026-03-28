@@ -1,163 +1,151 @@
- UQ-Diffusion
+# UQ in Diffusion
 
-Epistemic uncertainty quantification for DDPM score networks via Laplace approximation, implemented on synthetic time-series.
+Epistemic uncertainty quantification for diffusion models via Laplace approximation.
 
-Implements and compares three UQ variants:
-
-- **LLLA** — Last-Layer Laplace Approximation with diagonal Hessian (fast).
-- **FLARE** — Randomized subset Laplace, diagonal Hessian over randomly selected parameters (middle ground).
-- **Bayes-diff** — Existing method from Kou et al. (2024).
+This repo implements **FLARE** (Fisher-Laplace Approximation for Randomized Epistemic uncertainty), which transports per-step epistemic variance from the score network's Laplace posterior to the generated samples via the closed-form DDPM transport factor.
 
 ---
 
-## Repository Structure
+## Method
 
+At each reverse diffusion step, we compute the epistemic variance of the score prediction:
+
+$$\gamma^2_t = \text{diag}(J_t \Sigma J_t^\top)$$
+
+where $J_t$ is the Jacobian of the score network at $(x_t, t)$ and $\Sigma$ is the Laplace posterior covariance.
+
+FLARE then projects this to $x_0$ via the accumulated transport factor:
+
+$$u_{\text{proj}} = \sum_t \left(\prod_{s < t} a_s\right)^2 b_t^2 \gamma^2_t$$
+
+This is compared against the full **BayesDiff** variance recursion:
+
+$$V_{t-1} = a_t^2 V_t + 2a_t b_t \text{Cov}[x_t, \varepsilon_t] + b_t^2 \gamma^2_t + \tilde{\beta}_t$$
+
+Three UQ variants are supported:
+- **LLLA** — last-layer diagonal (fast, closed-form $\gamma^2$)
+- **FLARE** — random subnetwork full Hessian (practical for larger models over full Hessian)
+- **Bayesdiff** — methodology from Kou et. al. (2024)
+
+---
+
+## Structure
 ```
 uq-diffusion/
-├── src/uqdiff/
-│   ├── models/
-│   │   └── scorenet_mlp.py        # FiLM-conditioned MLP score network
-│   ├── diffusion/
-│   │   ├── schedules.py           # Cosine beta schedule
-│   │   ├── timecode.py            # Normalized logSNR time conditioning
-│   │   └── ddpm.py                # DDPM forward/reverse process
-│   ├── laplace/
-│   │   ├── wrapper.py             # LaplaceWrapper: ScoreNet → [x_t, t_norm] interface
-│   │   ├── dataset.py             # Laplace fitting dataset construction
-│   │   ├── fit_laplace.py         # Unified Laplace builder/fitter (diag | flare | full)
-│   │   ├── flare.py               # FLARE: randomized subset Laplace
-│   │   ├── llla.py                # LLLA build + γ² computation
-│   │   ├── bayesdiff_llla.py      # BayesDiff sampler (LLLA, diagonal)
-│   │   └── bayesdiff_fullH.py     # BayesDiff samplers (full Hessian)
-│   ├── fisher/
-│   │   └── jacobian.py            # vmap Jacobians, robust Cholesky, γ² (full)
-│   └── utils/
-│       ├── data.py                # Synthetic data generation + DataLoader
-│       ├── train.py               # Training loop (min-SNR, EMA, warmup cosine LR)
-│       ├── ema.py                 # EMA model helpers
-│       └── rng.py                 # Generator-aware randn_like
-├── scripts/
-│   ├── train.py                   # CLI training script
-│   └── sample.py                  # CLI sampling + optional BayesDiff UQ
+├── src/uqdiff/                  # pip-installable UQ package
+│   ├── utils.py                 # timecodes, robust_chol, randn_like_gen
+│   ├── schedules.py             # cosine schedule, compute_alpha
+│   ├── ddpm.py                  # forward/reverse diffusion process
+│   └── laplace/
+│       ├── core.py              # LaplaceWrapper, dataset, build_llla/subnet/full
+│       ├── precision.py         # γ² computation (diag, vmap full, subnet)
+│       ├── bayesdiff.py         # BayesDiff sampler (LLLA)
+│       └── flare.py             # FLARE projection (LLLA, full, subnet)
+│
 ├── experiments/
-│   └── timeseries/
-│       ├── run_experiment.py      # Unified runner (--hessian diag|flare|full)
-│       └── plot_uncertainty.py    # Trajectory visualization colored by uncertainty
-├── configs/
-│   └── r10_default.yaml           # Default hyperparameters
-├── tests/                         # pytest unit tests
-├── assets/                        # Figures and saved results
-└── checkpoints/                   # Model checkpoints
+│   ├── shared/
+│   │   ├── scorenet.py          # FiLM-conditioned MLP score network
+│   │   ├── train.py             # training loop (min-SNR, EMA, warmup cosine)
+│   │   └── data.py              # synthetic time-series generators
+│   ├── sines/                   # R10 experiment (full Hessian feasible)
+│   │   ├── config.yaml
+│   │   ├── run_uq.py
+│   │   └── plot_uncertainty.py
+│   └── chirp/                   # R80 experiment (SubnetLaplace)
+│       ├── config.yaml
+│       ├── run_uq.py
+│       └── plot_uncertainty.py
 ```
 
 ---
 
 ## Installation
-
 ```bash
-pip install -e ".[dev]"
-```
-
-Requires Python ≥ 3.10 and PyTorch ≥ 2.1.
-
----
-
-## Quickstart
-
-### 1. Train
-
-```bash
-python scripts/train.py \
-    --hidden_dim 16 --time_dim 32 --n_blocks 2 \
-    --data_dim 10 --n_samples 5000 \
-    --epochs 600 --lr 5e-4 \
-    --save_name ddpm_r10_final.pth
-```
-
-### 2. Sample (plain DDPM)
-
-```bash
-python scripts/sample.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --n 2000 --out_dir assets
-```
-
-### 3. Sample with BayesDiff (LLLA uncertainty)
-
-```bash
-python scripts/sample.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --bayesdiff --n 200 --out_dir assets
-```
-
-Outputs `assets/x0_bd.npy`, `assets/u_ep_bd.npy`, `assets/u_proj_bd.npy`.
-
----
-
-## Experiments
-
-### LLLA (fast)
-
-```bash
-python experiments/timeseries/run_experiment.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --hessian diag --n 200 --seed 20251022 \
-    --out assets/results.pkl
-```
-
-### FLARE (randomized subset)
-
-```bash
-# 10% of parameters randomly selected
-python experiments/timeseries/run_experiment.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --hessian flare --flare_frac 0.1 --flare_seed 42 \
-    --n 200 --seed 20251022 --out assets/results.pkl
-
-# 30% of parameters
-python experiments/timeseries/run_experiment.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --hessian flare --flare_frac 0.3 --flare_seed 42 \
-    --n 200 --seed 20251022 --out assets/results.pkl
-```
-
-### Full-Hessian (exact, small models only)
-
-```bash
-python experiments/timeseries/run_experiment.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --hessian full --n 20 --seed 20251022 \
-    --out assets/results.pkl
-```
-
-All three runs append to the same `results.pkl` under `results["diag"]`, `results["flare"]`, and `results["full"]`.
-
-### Fit Laplace once, sample many times
-
-```bash
-# Fit and save (no sampling)
-python experiments/timeseries/run_experiment.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --hessian diag \
-    --save_laplace checkpoints/la_diag.pkl \
-    --skip_sampling
-
-# Load saved Laplace and sample (fast)
-python experiments/timeseries/run_experiment.py \
-    --checkpoint checkpoints/ddpm_r10_final.pth \
-    --hessian diag \
-    --load_laplace checkpoints/la_diag.pkl \
-    --n 200 --seed 20251022 --out assets/results.pkl
-```
-
-Works for all three hessian types.
-
-### Plot uncertainty
-
-```bash
-python experiments/timeseries/plot_uncertainty.py \
-    --results assets/results.pkl \
-    --out assets/figures/uncertainty.pdf
+git clone https://github.com/aditiii12/UQ_in_Diffusion.git
+cd UQ_in_Diffusion
+pip install -e ".[experiments]"
 ```
 
 ---
+
+## Checkpoints
+
+Pretrained checkpoints for both experiments are available in `checkpoints/`.
+
+| Experiment | Dataset         | data_dim | Model                        |
+|------------|-----------------|----------|------------------------------|
+| sines      | sine / -sine    | 10       | ScoreNet (hidden=512, blocks=2) |
+| chirp      | FM / AM / damped| 80       | ScoreNet (hidden=128, blocks=0) |
+
+---
+
+## Running the UQ experiments
+
+**Sines (Full Hessian):**
+```bash
+python experiments/sines/run_uq.py \
+    --checkpoint checkpoints/sines/ddpm_sines.pth \
+    --device cuda
+```
+
+**Chirp (SubnetLaplace):**
+```bash
+python experiments/chirp/run_uq.py \
+    --checkpoint checkpoints/chirp/ddpm_chirp.pth \
+    --device cuda
+```
+
+**Plotting:**
+```bash
+python experiments/sines/plot_uncertainty.py --results assets/sines/results.pkl
+python experiments/chirp/plot_uncertainty.py --results assets/chirp/results.pkl
+```
+
+---
+
+## Using the package with your own model
+
+The `uqdiff` package is model-agnostic. You only need a score model that maps `(x_t, t_code) -> eps`. Wrap it with `LaplaceWrapper`, fit Laplace, and run FLARE:
+```python
+from uqdiff.schedules import make_schedules
+from uqdiff.utils import prep_time_stats
+from uqdiff.laplace.core import (
+    LaplaceWrapper, DiffusionShim,
+    make_laplace_dataset, make_laplace_loader,
+    build_llla,
+)
+from uqdiff.laplace.bayesdiff import sample_bayesdiff
+
+# 1. build schedules
+betas, alphas, abar = make_schedules(T=1000)
+ls_mu, ls_sd = prep_time_stats(abar)
+
+# 2. fit LLLA on your trained model
+la, wrapped, _ = build_llla(your_ema_model, abar, ls_mu, ls_sd, data_dim=D)
+X_lap, Y_lap, _ = make_laplace_dataset(X_train, abar, T=1000, N_pairs=100_000, data_dim=D)
+la.fit(make_laplace_loader(X_lap, Y_lap))
+la.optimize_prior_precision(method="marglik")
+
+# 3. sample with uncertainty
+diffusion = DiffusionShim(betas)
+x0, u_bayes, u_ep, u_proj = sample_bayesdiff(
+    diffusion, wrapped.net, la,
+    seq=list(range(1000)),
+    abar=abar, ls_mu=ls_mu, ls_sd=ls_sd,
+    n=500, device="cuda",
+)
+```
+
+---
+
+## Citation
+
+If you use this code, please cite:
+```bibtex
+@inproceedings{gupta2026flare,
+  title     = {FLARE: Fisher-Laplace Approximation for Randomized Epistemic Uncertainty in Diffusion Models},
+  author    = {Gupta, Aditi and Erichson, Ben},
+  booktitle = {AISTATS},
+  year      = {2026}
+}
+```
