@@ -140,11 +140,10 @@ x0, u_bayes, u_ep, u_proj = sample_bayesdiff(
 
 ## Citation
 
-If you use this code, please cite:
+If citing or using the code, please cite:
 ```bibtex
 @inproceedings{gupta2026flare,
-  title     = {FLARE: Fisher-Laplace Approximation for Randomized Epistemic Uncertainty in Diffusion Models},
-  author    = {Gupta, Aditi and Erichson, Ben},
+  title     = {Quantifying Epistemic Uncertainty in Diffusion Models},
   booktitle = {AISTATS},
   year      = {2026}
 }
