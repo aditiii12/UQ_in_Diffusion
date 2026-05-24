@@ -1,8 +1,8 @@
-# UQ in Diffusion
+# Official Impletentation of FLARE (AISTATS 2026)
 
-Epistemic uncertainty quantification for diffusion models via Laplace approximation.
+Epistemic uncertainty quantification for diffusion models via Laplace approximation (AISTATS 2026)
 
-This repo implements **FLARE** (Fisher-Laplace Approximation for Randomized Epistemic uncertainty), which transports per-step epistemic variance from the score network's Laplace posterior to the generated samples via the closed-form DDPM transport factor.
+This repo implements **FLARE** (Fisher-Laplace Approximation for Randomized Epistemic uncertainty), which transports per-step epistemic variance from the score network's Laplace posterior to the generated samples via the closed-form DDPM transport factor. Paper Link - https://arxiv.org/pdf/2602.09170
 
 ---
 
